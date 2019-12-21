@@ -11,8 +11,9 @@ This project make use of an API developed by [UoC-Radio](https://github.com/UoC-
 * [soundmanager2](http://www.schillmania.com/projects/soundmanager2)
 
 ## Use
-You have to import the `radio_player.css` and  `radio_player.js`
-The simply put the html code wherever you want
+You have to import the `radio_player.css` and  `radio_player.js`.
+
+Then simply put the html code wherever you want
 ```html
 <div class='music-card'>
     <div id='cover' class='image'></div>
