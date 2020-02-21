@@ -3,17 +3,14 @@ function set_icon(action) {
         case -1://stopped
             jQuery("#player_icon").addClass('play').removeClass('pause').removeClass('loader');
             jQuery('.music-card').removeClass('playing');
-
             break;
         case 0://playing
             jQuery("#player_icon").addClass('pause').removeClass('play').removeClass('loader');
             jQuery('.music-card').addClass('playing');
-
             break;
         case 1://loading
             jQuery("#player_icon").addClass('loader').removeClass('play').removeClass('pause');
             jQuery('.music-card').removeClass('playing');
-
             break;
     }
 }
@@ -44,9 +41,26 @@ function set_image(meta_url) {
     });
 }
 
+function refresh_meta(metadata) {
+    jQuery.get('https://matzore-shows.herokuapp.com/api/get_show_playing', data => {
+        if (!jQuery.isEmptyObject(data)) {
+            jQuery('.title').html(data.name);
+            jQuery('.artist').html(data.message);
+            jQuery('.album').html('');
+            if (data.cover != null)
+                jQuery('#cover').css('background-image', 'url(' + data.cover + ')');
+        } else if (metadata.songTitle && metadata.artist) {
+            jQuery('.title').html(metadata.songTitle);
+            jQuery('.artist').html(metadata.artist);
+            jQuery('.album').html('<a class="album" href=' + metadata.metadata_url + ' target="_blank">' + metadata.albumTitle + '</a>' + '<br/>');
+            set_image(metadata.metadata_url)
+        }
+    });
+}
+
 jQuery(document).ready(function () {
     const connection = new autobahn.Connection({
-        url: 'ws://83.212.124.250:8080/ws',
+        url: 'ws://83.212.124.250:8081/ws',
         realm: 'metadata-realm',
         authid: "anonymous"
     });
@@ -54,13 +68,7 @@ jQuery(document).ready(function () {
         // 1) subscribe to a topic
         function onevent(args) {
             console.log("Event:", args[0]);
-            metadata = jQuery.parseJSON(args[0]);
-            if (metadata.songTitle && metadata.artist) {
-                jQuery('.title').html(metadata.songTitle);
-                jQuery('.artist').html(metadata.artist);
-                jQuery('.album').html('<a class="album" href=' + metadata.metadata_url + ' target="_blank">' + metadata.albumTitle + '</a>' + '<br/>');
-                set_image(metadata.metadata_url)
-            }
+            refresh_meta(jQuery.parseJSON(args[0]))
         }
 
         session.subscribe('com.metadata.client.metadata_event', onevent).then(
@@ -68,14 +76,7 @@ jQuery(document).ready(function () {
                 console.log("subscribed with subscription ID " + sub.id);
                 session.call('wamp.subscription.get_events', [sub.id, 1]).then(
                     function (history) {
-                        metadata = jQuery.parseJSON(history[0].args[0]);
-                        console.log(metadata);
-                        if (metadata.songTitle && metadata.artist) {
-                            jQuery('.title').html(metadata.songTitle);
-                            jQuery('.artist').html(metadata.artist);
-                            jQuery('.album').html('<a class="album" href=' + metadata.metadata_url + ' target="_blank">' + metadata.albumTitle + '</a>' + '<br/>');
-                            set_image(metadata.metadata_url)
-                        }
+                        refresh_meta(jQuery.parseJSON(history[0].args[0]))
                     },
                     function (err) {
                         console.log("could not retrieve event history", err);
@@ -95,13 +96,11 @@ jQuery(document).ready(function () {
     soundManager.onready(function () {
         sound = soundManager.createSound({
             id: 'Radio',
-            url: 'http://rs.radio.uoc.gr:8000/uoc_64.mp3',
+            url: 'http://rs.radio.uoc.gr:8000/matzore_64.mp3',
             onstop: function () {
-                console.log("onstop!!!");
                 set_icon(-1)
             },
             onbufferchange: function (action) {
-                console.log("onbufferchange!!!->" + action);
                 set_icon(action);
             }
         });
